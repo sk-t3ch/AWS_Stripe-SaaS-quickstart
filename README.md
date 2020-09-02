@@ -4,6 +4,23 @@ The infrastruture is written using CloudFormation.
 * The blog post can/will be found [here](https://medium.com/@t3chflicks).
 * Live demo can/will be found [here](https://saas-app.t3chflicks.org).
 
+
+
+# How it works
+### Architecture Overview
+![architecture](./extra/images/architecture.png)
+
+### User Management State Machine
+![](./extra/images/stepfunctions_graph.png)
+
+### Screenshots
+Home Page
+![](./extra/images/home_page.png)
+User Page
+![](./extra/images/user_page.png)
+Prices Page
+![](./extra/images/prices_page.png)
+
 # Step By Step Instructions
 1. This project assumes the existence of a domain hosted on Route53 and with SSL certificates for both the region of your service and US-EAST-1.
     1. [Get a domain on AWS](https://aws.amazon.com/getting-started/hands-on/get-a-domain/) 
@@ -80,23 +97,6 @@ The infrastruture is written using CloudFormation.
     * ```
         aws s3 cp ./dist s3://saas-app.YOUR_DOMAIN --recursive
       ```
-
-
-
-# How it works
-### Architecture Overview
-![architecture](./extra/images/architecture.png)
-
-### User Management State Machine
-![](./extra/images/stepfunctions_graph.png)
-
-### Screenshots
-Home Page
-![](./extra/images/home_page.png)
-User Page
-![](./extra/images/user_page.png)
-Prices Page
-![](./extra/images/prices_page.png)
 
 ## Extra Info 
 * [Stripe API Docs](https://stripe.com/docs/api)
