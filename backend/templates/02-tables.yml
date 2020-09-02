@@ -1,0 +1,57 @@
+Description: Tables
+AWSTemplateFormatVersion: '2010-09-09'
+
+Resources:
+  UserTable: 
+    Type: AWS::DynamoDB::Table
+    Properties: 
+      BillingMode: "PAY_PER_REQUEST"
+      AttributeDefinitions: 
+        - AttributeName: "Id"
+          AttributeType: "S"
+        - AttributeName: "Key"
+          AttributeType: "S"
+      KeySchema: 
+        - AttributeName: "Id"
+          KeyType: "HASH"
+      GlobalSecondaryIndexes:
+        - IndexName: "KeyLookup"
+          KeySchema: 
+            - AttributeName: "Key"
+              KeyType: "HASH"
+          Projection: 
+            ProjectionType: "ALL"
+
+  ProductTable: 
+    Type: AWS::DynamoDB::Table
+    Properties: 
+      BillingMode: "PAY_PER_REQUEST"
+      AttributeDefinitions: 
+        - AttributeName: "name"
+          AttributeType: "S"
+      KeySchema: 
+        - AttributeName: "name"
+          KeyType: "HASH"
+
+ 
+Outputs:
+  UserTableName:
+    Value: !Ref UserTable
+    Export:
+      Name: SaaS-UserTableName
+
+  UserTableArn:
+    Value: !GetAtt UserTable.Arn
+    Export:
+      Name: SaaS-UserTableArn
+
+  ProductTableName:
+    Value: !Ref ProductTable
+    Export:
+      Name: SaaS-ProductTableName
+
+  ProductTableArn:
+    Value: !GetAtt ProductTable.Arn
+    Export:
+      Name: SaaS-ProductTableArn
+

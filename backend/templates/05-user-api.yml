@@ -1,0 +1,423 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Parameters:
+  StripeSecretKey:
+    Type: String
+    Description: Stripe Secret Key
+
+Resources:
+  DomainName:
+    Type: AWS::ApiGateway::DomainName
+    Properties:
+      RegionalCertificateArn: !ImportValue SaaS-RegionalCertArn
+      DomainName: !Sub
+      - user.${Domain}
+      - { Domain: !ImportValue SaaS-RootDomain }
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  BasePathMapping:
+    DependsOn:
+      - UserApiDeployment0
+    Type: AWS::ApiGateway::BasePathMapping
+    Properties:
+      DomainName: !Ref DomainName
+      RestApiId: !Ref UserApi
+      Stage: Dev
+
+  RecordSet:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !ImportValue SaaS-HostedZoneId
+      Name: !Ref DomainName
+      Type: A
+      AliasTarget:
+        HostedZoneId: !GetAtt DomainName.RegionalHostedZoneId
+        DNSName: !GetAtt DomainName.RegionalDomainName
+
+  UserApi:
+    Type: 'AWS::ApiGateway::RestApi'
+    Properties:
+      Body:
+        info:
+          version: '1.0'
+          title: !Ref 'AWS::StackName'
+        paths:
+          /generate-key:
+            options:
+              x-amazon-apigateway-integration:
+                type: mock
+                requestTemplates:
+                  application/json: |
+                    {
+                      "statusCode" : 200
+                    }
+                responses:
+                  default:
+                    statusCode: '200'
+                    responseTemplates:
+                      application/json: |
+                        {}
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Origin: '''*'''
+                      method.response.header.Access-Control-Allow-Methods: '''*'''
+                      method.response.header.Access-Control-Allow-Headers: '''*'''
+              consumes:
+                - application/json
+              summary: CORS support
+              responses:
+                '200':
+                  headers:
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                  description: Default response for CORS method
+              produces:
+                - application/json
+            get:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri: !Sub >-
+                  arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GenerateKeyFunction.Arn}/invocations
+              security:
+                - CognitoUserPoolAuthorizer: []
+              responses: {}
+          /checkout:
+            post:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri: !Sub >-
+                  arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${StripeCheckoutFunction.Arn}/invocations
+              security:
+                - CognitoUserPoolAuthorizer: []
+              responses: {}
+            options:
+              x-amazon-apigateway-integration:
+                type: mock
+                requestTemplates:
+                  application/json: |
+                    {
+                      "statusCode" : 200
+                    }
+                responses:
+                  default:
+                    statusCode: '200'
+                    responseTemplates:
+                      application/json: |
+                        {}
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Origin: '''*'''
+                      method.response.header.Access-Control-Allow-Methods: '''*'''
+                      method.response.header.Access-Control-Allow-Headers: '''*'''
+              consumes:
+                - application/json
+              summary: CORS support
+              responses:
+                '200':
+                  headers:
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                  description: Default response for CORS method
+              produces:
+                - application/json
+          /user:
+            options:
+              x-amazon-apigateway-integration:
+                type: mock
+                requestTemplates:
+                  application/json: |
+                    {
+                      "statusCode" : 200
+                    }
+                responses:
+                  default:
+                    statusCode: '200'
+                    responseTemplates:
+                      application/json: |
+                        {}
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Origin: '''*'''
+                      method.response.header.Access-Control-Allow-Methods: '''*'''
+                      method.response.header.Access-Control-Allow-Headers: '''*'''
+              consumes:
+                - application/json
+              summary: CORS support
+              responses:
+                '200':
+                  headers:
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                  description: Default response for CORS method
+              produces:
+                - application/json
+            get:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri: !Sub >-
+                  arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetUserFunction.Arn}/invocations
+              security:
+                - CognitoUserPoolAuthorizer: []
+              responses: {}
+          /stop-subscriptions:
+            options:
+              x-amazon-apigateway-integration:
+                type: mock
+                requestTemplates:
+                  application/json: |
+                    {
+                      "statusCode" : 200
+                    }
+                responses:
+                  default:
+                    statusCode: '200'
+                    responseTemplates:
+                      application/json: |
+                        {}
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Origin: '''*'''
+                      method.response.header.Access-Control-Allow-Methods: '''*'''
+                      method.response.header.Access-Control-Allow-Headers: '''*'''
+              consumes:
+                - application/json
+              summary: CORS support
+              responses:
+                '200':
+                  headers:
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                  description: Default response for CORS method
+              produces:
+                - application/json
+            get:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri: !Sub >-
+                  arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${StopSubscriptionsFunction.Arn}/invocations
+              security:
+                - CognitoUserPoolAuthorizer: []
+              responses: {}
+        swagger: '2.0'
+        securityDefinitions:
+          CognitoUserPoolAuthorizer:
+            in: header
+            type: apiKey
+            name: Authorization
+            x-amazon-apigateway-authorizer:
+              providerARNs:
+                - !ImportValue SaaS-CognitoUserPoolArn
+              type: cognito_user_pools
+            x-amazon-apigateway-authtype: cognito_user_pools
+ 
+  UserApiDeployment0:
+    Type: 'AWS::ApiGateway::Deployment'
+    Properties:
+      RestApiId: !Ref UserApi
+      Description: 'RestApi deployment id: 0'
+      StageName: Dev
+
+  StopSubscriptionsPermission:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      Principal: apigateway.amazonaws.com
+      FunctionName: !Ref StopSubscriptionsFunction
+      SourceArn: !Sub 
+        - >-
+          arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${__ApiId__}/${__Stage__}/GET/stop-subscriptions
+        - __Stage__: '*'
+          __ApiId__: !Ref UserApi
+
+  StopSubscriptionsFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: main.handler
+      Runtime: python3.8
+      Code:
+        S3Bucket: !ImportValue SaaS-CodeBucketName
+        S3Key: StopSubscriptions.zip
+      Role: !GetAtt StopSubscriptionsLambdaRole.Arn
+      Environment:
+        Variables:
+          STRIPE_SECRET_KEY: !Ref StripeSecretKey
+          STATE_MACHINE_ARN: !ImportValue SaaS-UserManagerStateMachineArn   
+          TABLE_NAME: !ImportValue SaaS-UserTableName
+
+  StopSubscriptionsLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: ['sts:AssumeRole']
+            Effect: Allow
+            Principal:
+              Service: ['lambda.amazonaws.com']
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: "UserTableAccessPolicy"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'dynamodb:GetItem'
+                  - 'dynamodb:UpdateItem'
+                Resource: !ImportValue SaaS-UserTableArn
+        - PolicyName: "SubscriptionManager"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'states:StartExecution'
+                Resource: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:StateMachine-*"
+
+  GetUserFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: main.handler
+      Runtime: python3.8
+      Code:
+        S3Bucket: !ImportValue SaaS-CodeBucketName
+        S3Key: GetUser.zip
+      Role: !GetAtt UserLambdaRole.Arn
+      Environment:
+        Variables:
+          TABLE_NAME: !ImportValue SaaS-UserTableName
+
+  GetUserPermission:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      Principal: apigateway.amazonaws.com
+      FunctionName: !Ref GetUserFunction
+      SourceArn: !Sub 
+        - >-
+          arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${__ApiId__}/${__Stage__}/GET/user
+        - __Stage__: '*'
+          __ApiId__: !Ref UserApi
+
+  GenerateKeyFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: main.handler
+      Runtime: python3.8
+      Code:
+        S3Bucket: !ImportValue SaaS-CodeBucketName
+        S3Key: GenerateKey.zip
+      Role: !GetAtt UserLambdaRole.Arn
+      Environment:
+        Variables:
+          TABLE_NAME: !ImportValue SaaS-UserTableName
+
+  GenerateKeyPermission:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      Principal: apigateway.amazonaws.com
+      FunctionName: !Ref GenerateKeyFunction
+      SourceArn: !Sub 
+        - >-
+          arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${__ApiId__}/${__Stage__}/GET/generate-key
+        - __Stage__: '*'
+          __ApiId__: !Ref UserApi
+
+  UserLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: ['sts:AssumeRole']
+            Effect: Allow
+            Principal:
+              Service: ['lambda.amazonaws.com']
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: "UserTableAccessPolicy"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'dynamodb:PutItem*'
+                  - 'dynamodb:UpdateItem*'
+                  - 'dynamodb:GetItem*'
+                  - 'dynamodb:Query*'
+                Resource: !ImportValue SaaS-UserTableArn
+                
+  StripeCheckoutFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: main.handler
+      Runtime: python3.8
+      Code:
+        S3Bucket: !ImportValue SaaS-CodeBucketName
+        S3Key: StripeCheckout.zip
+      Role: !GetAtt StripeCheckoutLambdaRole.Arn
+      Environment:
+        Variables:
+          STRIPE_SECRET_KEY: !Ref StripeSecretKey
+          PRODUCT_TABLE_NAME: !ImportValue SaaS-ProductTableName
+          USER_TABLE_NAME: !ImportValue SaaS-UserTableName
+          DOMAIN_NAME: !Sub
+            - saas-app.${Domain}
+            - Domain: !ImportValue SaaS-RootDomain
+
+  StripeCheckoutPermission:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      Principal: apigateway.amazonaws.com
+      FunctionName: !Ref StripeCheckoutFunction
+      SourceArn: !Sub 
+        - >-
+          arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${__ApiId__}/${__Stage__}/POST/checkout
+        - __Stage__: '*'
+          __ApiId__: !Ref UserApi
+
+  StripeCheckoutLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: ['sts:AssumeRole']
+            Effect: Allow
+            Principal:
+              Service: ['lambda.amazonaws.com']
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: "AccessTablesPolicy"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'dynamodb:GetItem'
+                Resource: 
+                  - !ImportValue SaaS-ProductTableArn
+                  - !ImportValue SaaS-UserTableArn
+

@@ -1,0 +1,124 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Parameters:
+  StripeSecretKey:
+    Type: String
+    Description: Stripe Secret Key
+  
+Resources:
+  CognitoUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: CognitoUserPool
+      LambdaConfig:
+        PostConfirmation: !GetAtt PostConfirmationLambdaFunction.Arn
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+      UsernameAttributes:
+        - email
+      AutoVerifiedAttributes:
+        - email
+      MfaConfiguration: "OFF"
+      Schema:
+        - Name: email
+          AttributeDataType: String
+          Mutable: false
+          Required: true
+        - Name: phone_number
+          AttributeDataType: String
+          Mutable: false
+          Required: false
+
+  CognitoUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: CognitoUserPoolClient
+      UserPoolId: !Ref CognitoUserPool
+      AllowedOAuthFlows:
+      - implicit
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthScopes:
+      - email
+      - openid
+      LogoutURLs:
+      - !Sub 
+        - https://saas-app.${ Domain }
+        - Domain: !ImportValue SaaS-RootDomain
+      CallbackURLs:
+      - !Sub 
+        - https://saas-app.${ Domain }
+        - Domain: !ImportValue SaaS-RootDomain
+      SupportedIdentityProviders:
+      - COGNITO          
+
+  PostConfirmationLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket: !ImportValue SaaS-CodeBucketName
+        S3Key: PostConfirmation.zip
+      Handler: main.handler
+      MemorySize: 128
+      Runtime: python3.8
+      Timeout: 60
+      Role: !GetAtt PostConfirmationLambdaRole.Arn
+      Environment:
+        Variables:
+          STRIPE_SECRET_KEY: !Ref StripeSecretKey
+          TABLE_NAME: !ImportValue SaaS-UserTableName
+          STATE_MACHINE_ARN: !ImportValue SaaS-UserManagerStateMachineArn  
+
+  PostConfirmationLambdaCognitoUserPoolExecutionPermission:
+    Type: AWS::Lambda::Permission
+    Properties: 
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt PostConfirmationLambdaFunction.Arn
+      Principal: cognito-idp.amazonaws.com
+      SourceArn: !Sub 'arn:${AWS::Partition}:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPool}'
+    
+  PostConfirmationLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: ['sts:AssumeRole']
+            Effect: Allow
+            Principal:
+              Service: ['lambda.amazonaws.com']
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: "UserTableAccessPolicy"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'dynamodb:PutItem*'
+                Resource: !ImportValue SaaS-UserTableArn
+        - PolicyName: "SubscriptionManager"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'states:StartExecution'
+                Resource: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:StateMachine-*"
+
+Outputs:
+  CognitoUserPoolId:
+    Value: !Ref CognitoUserPool
+    Export:
+      Name: SaaS-CognitoUserPoolId
+
+  CognitoUserPoolArn:
+    Value: !GetAtt  CognitoUserPool.Arn
+    Export:
+      Name: SaaS-CognitoUserPoolArn
+
+  CognitoUserPoolClientId:
+    Value: !Ref CognitoUserPoolClient
+    Export:
+      Name: SaaS-CognitoUserPoolClientId

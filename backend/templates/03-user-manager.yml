@@ -1,0 +1,146 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Resources:
+  StateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn: !GetAtt StatesExecutionRole.Arn
+      StateMachineType: STANDARD
+      DefinitionString: !Sub
+      - |-
+        {
+          "Comment":"UserManagerStateMachine",
+          "StartAt":"AddPlan",
+          "States":{
+              "AddPlan":{
+                "Type":"Task",
+                "Resource":"${LambdaAddPlanArn}",
+                "Parameters":{
+                    "username.$":"$.username",
+                    "plan.$":"$.plan",
+                    "subscribe.$":"$.subscribe"
+                },
+                "Catch":[
+                    {
+                      "ErrorEquals":[
+                          "States.TaskFailed"
+                      ],
+                      "Next":"AddPlanFailed"
+                    }
+                ],
+                "ResultPath":"$",
+                "Next":"isFreePlan"
+              },
+              "AddPlanFailed":{
+                "Type":"Task",
+                "Resource":"arn:aws:states:::sns:publish",
+                "Parameters":{
+                    "TopicArn":"${UserManagerSNSTopicArn}",
+                    "Message":"Failed to add $.plan to $.username - please fix"
+                },
+                "Next":"Finished"
+              },
+              "isFreePlan":{
+                "Type":"Choice",
+                "InputPath":"$",
+                "Choices":[
+                    {
+                      "Variable":"$.plan",
+                      "StringEquals":"Free",
+                      "Next":"Wait"
+                    }
+                ],
+                "Default":"Finished"
+              },
+              "Wait":{
+                "Type":"Wait",
+                "TimestampPath":"$.subscription_end",
+                "Next":"AddPlan"
+              },
+              "Finished":{
+                "Type":"Pass",
+                "End":true
+              }
+          }
+        }
+      - LambdaAddPlanArn: !GetAtt LambdaAddPlan.Arn
+        UserManagerSNSTopicArn: !ImportValue SaaS-AlertSNSTopicArn
+
+
+  LambdaAddPlan:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket: !ImportValue SaaS-CodeBucketName
+        S3Key: AddPlan.zip
+      Handler: main.handler
+      MemorySize: 128
+      Runtime: python3.8
+      Timeout: 60
+      Role: !GetAtt LambdaAddPlanRole.Arn
+      Environment:
+        Variables:
+          USER_TABLE_NAME: !ImportValue  SaaS-UserTableName
+          PRODUCT_TABLE_NAME: !ImportValue SaaS-ProductTableName
+
+  LambdaAddPlanRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: ['sts:AssumeRole']
+            Effect: Allow
+            Principal:
+              Service: ['lambda.amazonaws.com']
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: "UserTableAccessPolicy"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'dynamodb:UpdateItem'
+                  - 'dynamodb:GetItem'
+                Resource: !ImportValue SaaS-UserTableArn
+        - PolicyName: "ProductTableAccessPolicy"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'dynamodb:GetItem'
+                Resource: !ImportValue SaaS-ProductTableArn
+
+  StatesExecutionRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - !Sub states.${AWS::Region}.amazonaws.com
+            Action: "sts:AssumeRole"
+      Path: "/"
+      Policies:
+        - PolicyName: StatesExecutionPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "lambda:InvokeFunction"
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - "sns:Publish"
+                Resource: !ImportValue SaaS-AlertSNSTopicArn
+
+Outputs:
+  UserManagerStateMachineArn:
+    Value: !Ref StateMachine
+    Export:
+      Name: SaaS-UserManagerStateMachineArn
