@@ -1,17 +1,17 @@
-# SaaS App Example with Stripe using AWS CloudFormation
-This project is an example SaaS app which allows you to register users and monitor their usage using credits and take payments (including subscriptions) using Stripe. 
-The infrastruture is written using CloudFormation.
-* The blog post can/will be found [here](https://medium.com/@t3chflicks).
-* Live demo can/will be found [here](https://saas-app.t3chflicks.org).
+# [T3chFlicks](https://t3chflicks.org): AWS SaaS App with Stripe Quickstart
+> Quickstart for running an example Sofware as a Service app on AWS allowing users to make subscriptions and payments via stripe.
 
+### Read The Blog Post ([github](./blog_post.md)/[medium](https://t3chflicks.medium.com/pay-me-quickstart-for-creating-a-saas-pt-2-stripe-payments-44bc4bb8388e))
 
+### Live demo can be found [here](https://saas-app.t3chflicks.org)
 
-# How it works
-### Architecture Overview
-![architecture](./extra/images/architecture.png)
+---
+
+## Architecture 
+> ![architecture](./extra/images/architecture.png)
 
 ### User Management State Machine
-![](./extra/images/stepfunctions_graph.png)
+> ![](./extra/images/stepfunctions_graph.png)
 
 ### Screenshots
 Home Page
@@ -21,7 +21,7 @@ User Page
 Prices Page
 ![](./extra/images/prices_page.png)
 
-# Step By Step Instructions
+## Step By Step Instructions
 1. This project assumes the existence of a domain hosted on Route53 and with SSL certificates for both the region of your service and US-EAST-1.
     1. [Get a domain on AWS](https://aws.amazon.com/getting-started/hands-on/get-a-domain/) 
     1. Create a [hosted zone on Route53](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/CreatingHostedZone.html)
@@ -105,3 +105,9 @@ Prices Page
     * Test Card 4000058260000005	tok_gb_debit	pm_card_gb_debit	United Kingdom (GB)	Visa (debit)
 * [AWS Cloudfront Region](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/cnames-and-https-requirements.html)
     * AWS Region that You Request a Certificate In (for AWS Certificate Manager)
+
+---
+
+This project was created by [T3chFlicks](https://t3chflicks.org) - A tech focused education and services company.
+
+---
