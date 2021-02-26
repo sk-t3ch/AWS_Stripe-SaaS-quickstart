@@ -1,9 +1,12 @@
 # [T3chFlicks](https://t3chflicks.org): AWS SaaS App with Stripe Quickstart
 > Quickstart for running an example Sofware as a Service app on AWS allowing users to make subscriptions and payments via stripe.
 
-### Read The Blog Post ([github](./blog_post.md)/[medium](https://t3chflicks.medium.com/pay-me-quickstart-for-creating-a-saas-pt-2-stripe-payments-44bc4bb8388e))
+[![Generic badge](https://img.shields.io/badge/Blog_Post-Github-orange.svg)](./blog_post.md)
 
-### Live demo can be found [here](https://saas-app.t3chflicks.org)
+[![Generic badge](https://img.shields.io/badge/Blog_Post-Medium-blue.svg)](https://t3chflicks.medium.com/pay-me-quickstart-for-creating-a-saas-pt-2-stripe-payments-44bc4bb8388e)
+
+[![Generic badge](https://img.shields.io/badge/Live-Demo-red.svg)](https://saas-app.t3chflicks.org)
+
 
 ---
 
